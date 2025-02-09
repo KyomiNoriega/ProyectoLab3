@@ -1,22 +1,22 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'https://criptoya.com/api';
+const apiClient = axios.create({
+    baseURL: 'https://criptoya.com/api',
+    withCredentials: false,
+    headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+    },
+})
 
-export const getCryptoPrices = async () => {
-  try {
-    const [btc, eth, usdc] = await Promise.all([
-      axios.get(`${API_BASE_URL}/satoshitango/btc/ars`),
-      axios.get(`${API_BASE_URL}/satoshitango/eth/ars`),
-      axios.get(`${API_BASE_URL}/satoshitango/usdc/ars`),
-    ]);
-
-    return {
-      BTC: btc.data.totalAsk,
-      ETH: eth.data.totalAsk,
-      USDC: usdc.data.totalAsk,
-    };
-  } catch (error) {
-    console.error('Error al obtener precios de criptomonedas:', error);
-    throw error;
-  }
-};
+export default {
+    getBitcoin() {
+        return apiClient.get('argenbtc/btc/ars/1')
+    },
+    getEtherum() {
+        return apiClient.get('argenbtc/eth/ars/1')
+    },
+    getUSDC() {
+        return apiClient.get('lemoncash/usdc/ars/1')
+    }
+}

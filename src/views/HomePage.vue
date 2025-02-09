@@ -4,54 +4,60 @@
       <h1>Cripto Precios</h1>
     </div>
 
-    <div class="content">
-      <div class="crypto-grid">
-        <CryptoCard v-for="crypto in cryptos" :key="crypto.name" :name="crypto.name" :ask="crypto.ask" />
+    <div class="container m-auto text-center">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <template v-if="Value">
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
+            <h2 class="text-2xl font-semibold mb-4">Bitcoin</h2>
+            <p class="text-gray-700 mb-2">Compra: ${{ btc.totalAsk }}</p>
+            <p class="text-gray-700">Venta: ${{ btc.totalBid }}</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
+            <h2 class="text-2xl font-semibold mb-4">Etherum</h2>
+            <p class="text-gray-700 mb-2">Compra: ${{ eth.totalAsk }}</p>
+            <p class="text-gray-700">Venta: ${{ eth.totalBid }}</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
+            <h2 class="text-2xl font-semibold mb-4">USDC</h2>
+            <p class="text-gray-700 mb-2">Compra: ${{ usdc.totalAsk }}</p>
+            <p class="text-gray-700">Venta: ${{ usdc.totalBid }}</p>
+          </div>
+        </template>
+        <div v-else class="col-span-full">
+          <p class="text-center text-gray-500 text-lg">Cargando....</p>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import CryptoCard from '@/components/CryptoCard.vue';
-import { getCryptoPrices } from '@/api/criptoya.js';
-import { mapState, mapMutations } from 'vuex';
+import criptoyaApi from '@/api/criptoya'
 
 export default {
-  components: { CryptoCard },
   data() {
     return {
-      cryptos: [], // Almacena la lista de criptomonedas con sus datos
+      btc: {},
+      eth: {},
+      usdc: {},
     };
   },
-  mounted() {
-    this.fetchCryptos();
+  created() {
+    criptoyaApi.getBitcoin().then((res) => { this.btc = res.data });
+    criptoyaApi.getEtherum().then((res) => { this.eth = res.data });
+    criptoyaApi.getUSDC().then((res) => { this.usdc = res.data });
   },
   computed: {
-    ...mapState(['userId']),
-  },
-  methods: {
-    ...mapMutations(['clearUserId']),
-    logout() {
-      this.clearUserId();
-      this.$router.push('/login');
-    },
-    async fetchCryptos() {
-      try {
-        const prices = await getCryptoPrices();
-
-        // Mapear los datos a un formato compatible con los componentes
-        this.cryptos = [
-          { name: 'Bitcoin', ask: prices.BTC },
-          { name: 'Ethereum', ask: prices.ETH },
-          { name: 'USDC', ask: prices.USDC },
-        ];
-      } catch (error) {
-        console.error('Error al cargar precios:', error);
+    Value: function () {
+      if (Object.keys(this.btc).length === 0 || Object.keys(this.eth).length === 0 || Object.keys(this.usdc).length === 0) {
+        return false
+      } else {
+        return true
       }
-    },
-  },
+    }
+  }
 };
+
 </script>
 
 <style scoped>
@@ -68,12 +74,5 @@ export default {
 h1 {
   margin: 0;
   font-size: 2rem;
-}
-
-.crypto-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  justify-items: center;
-  align-items: start;
 }
 </style>

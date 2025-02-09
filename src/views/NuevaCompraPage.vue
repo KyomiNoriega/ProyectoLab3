@@ -1,122 +1,124 @@
 <template>
     <div class="purchase-form">
-        <h1>Registrar Compra</h1>
-        <form @submit.prevent="handleSubmit">
+        <h1>Compra y Venta de Criptomonedas</h1>
+        <form @submit.prevent="realizarOperacion">
             <div class="form-group">
                 <label for="crypto">Criptomoneda</label>
-                <select v-model="form.crypto_code" id="crypto" required>
-                    <option disabled value="">Seleccione una opción</option>
-                    <option value="bitcoin">Bitcoin</option>
-                    <option value="ethereum">Ethereum</option>
+                <select v-model="coin">
+                    <option value="btc">Bitcoin</option>
+                    <option value="eth">Ethereum</option>
                     <option value="usdc">USDC</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="crypto_amount">Cantidad</label>
-                <input type="number" step="0.00001" v-model.number="form.crypto_amount" id="crypto_amount" required
-                    placeholder="Ej: 0.001" />
+                <label>
+                    Tipo de Operación:
+                    <select v-model="action">
+                        <option value="purchase">Compra</option>
+                        <option value="sale">Venta</option>
+                    </select>
+                </label>
             </div>
-
             <div class="form-group">
-                <label for="money">Monto Pagado (ARS)</label>
-                <input type="number" step="0.01" v-model.number="form.money" id="money" required
-                    placeholder="Ej: 165.23" />
+                <label v-if="coin === 'btc'">
+                    Precio: <span v-if="action === 'purchase'"> ${{ this.criptos.btc.totalAsk }} </span>
+                    <span v-else-if="action === 'sale'"> ${{ this.criptos.btc.totalBid }} </span>
+                </label>
             </div>
-
             <div class="form-group">
-                <label for="datetime">Fecha y Hora</label>
-                <input type="datetime-local" v-model="form.datetime" id="datetime" required />
+                <label v-if="coin === 'usdc'">
+                    Precio: <span v-if="action === 'purchase'"> ${{ this.criptos.usdc.totalAsk }} </span>
+                    <span v-else-if="action === 'sale'"> ${{ this.criptos.usdc.totalBid }} </span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label v-if="coin === 'eth'">
+                    Precio: <span v-if="action === 'purchase'"> ${{ this.criptos.eth.totalAsk }} </span>
+                    <span v-else-if="action === 'sale'"> ${{ this.criptos.eth.totalBid }} </span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    Cantidad:
+                    <input type="number" v-model="crypto_amount" min="0" step="0.0000000001"
+                        aria-label="Amount (to the nearest dollar)" placeholder="Ej: 0.00001">
+                </label>
             </div>
 
             <button type="submit" class="submit-button">Registrar Compra</button>
         </form>
-
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-        <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
     </div>
 </template>
 
 <script>
-import axios from 'axios';
+import criptoyaApi from '@/api/criptoya';
+import lab3api from '@/api/lab3api';
+import moment from 'moment';
 
 export default {
     data() {
         return {
-            form: {
-                crypto_code: '',
-                crypto_amount: null,
-                money: null,
-                datetime: '',
-            },
-            errorMessage: '',
-            successMessage: '',
-        };
+            action: 'purchase',
+            coin: 'btc',
+            crypto_amount: 0,
+            money: '0',
+            datetime: '',
+            criptos: {
+                btc: '',
+                eth: '',
+                usdc: '',
+            }
+        }
+    },
+    created() {
+        criptoyaApi.getBitcoin().then((res) => { this.criptos.btc = res.data });
+        criptoyaApi.getEtherum().then((res) => { this.criptos.eth = res.data });
+        criptoyaApi.getUSDC().then((res) => { this.criptos.usdc = res.data });
+    },
+    computed: {
+        totalTransaction() {
+            let amount = 0;
+
+            if (this.coin === 'btc') {
+                if (this.action === 'purchase') {
+                    amount = this.crypto_amount * this.criptos.btc.totalAsk;
+                } else if (this.action === 'sale') {
+                    amount = this.crypto_amount * this.criptos.btc.totalBid;
+                }
+            } else if (this.coin === 'eth') {
+                if (this.action === 'purchase') {
+                    amount = this.crypto_amount * this.criptos.eth.totalAsk;
+                } else if (this.action === 'sale') {
+                    amount = this.crypto_amount * this.criptos.eth.totalBid;
+                }
+            } else if (this.coin === 'usdc') {
+                if (this.action === 'purchase') {
+                    amount = this.crypto_amount * this.criptos.usdc.totalAsk;
+                } else if (this.action === 'sale') {
+                    amount = this.crypto_amount * this.criptos.usdc.totalBid;
+                }
+            }
+
+            return amount.toFixed(2);
+        }
     },
     methods: {
-        async handleSubmit() {
-            // Validar datos ingresados
-            if (
-                !this.form.crypto_code ||
-                this.form.crypto_amount <= 0 ||
-                this.form.money <= 0 ||
-                !this.form.datetime
-            ) {
-                this.errorMessage = 'Por favor, ingrese datos válidos.';
-                this.successMessage = '';
-                return;
+        realizarOperacion() {
+            this.datetime = new Date();
+            this.datetime = moment(this.datetime).format("DD-MM-YYYY hh:ss");
+            let transaction = {
+                user_id: localStorage.getItem('userId'),
+                action: this.action,
+                crypto_code: this.coin,
+                crypto_amount: this.crypto_amount.toString(),
+                money: this.money,
+                datetime: this.datetime,
             }
-
-            try {
-                // Construir el objeto de la transacción
-                const transaction = {
-                    user_id: localStorage.getItem('userId'), // Obtener el ID del usuario
-                    action: 'purchase',
-                    crypto_code: this.form.crypto_code,
-                    crypto_amount: this.form.crypto_amount.toString(),
-                    money: this.form.money.toString(),
-                    datetime: this.formatDateTime(this.form.datetime),
-                };
-
-                // Enviar datos a la API
-                await axios.post(
-                    'https://laboratorio3-f36a.restdb.io/rest/transactions',
-                    transaction,
-                    {
-                        headers: {
-                            'x-apikey': '60eb09146661365596af552f',
-                        },
-                    }
-                );
-
-                // Limpiar el formulario y mostrar éxito
-                this.successMessage = 'Compra registrada con éxito.';
-                this.errorMessage = '';
-                this.resetForm();
-            } catch (error) {
-                console.error('Error al registrar la compra:', error);
-                this.errorMessage =
-                    'Ocurrió un error al registrar la compra. Por favor, inténtelo nuevamente.';
-                this.successMessage = '';
-            }
+            lab3api.postTransaction(transaction);
+            console.log(transaction);
         },
-        resetForm() {
-            this.form.crypto_code = '';
-            this.form.crypto_amount = null;
-            this.form.money = null;
-            this.form.datetime = '';
-        },
-        formatDateTime(datetime) {
-            const date = new Date(datetime);
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-
-            return `${day}-${month}-${year} ${hours}:${minutes}`;
-        },
-    },
+    }
 };
 </script>
 

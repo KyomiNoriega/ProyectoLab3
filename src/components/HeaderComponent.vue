@@ -9,7 +9,6 @@
         <li><router-link to="/home">Inicio</router-link></li>
         <li><router-link to="/nuevacompra">Compra</router-link></li>
         <li><router-link to="/historialdemovimientos">Movimientos</router-link></li>
-        <li><router-link to="/detalletransacciones">Transacciones</router-link></li>
         <li><router-link to="/analisisdeestadoactual">Analisis del Estado</router-link></li>
         <li><router-link to="/analisisdeinversiones">Analisis de Inversiones</router-link></li>
       </ul>

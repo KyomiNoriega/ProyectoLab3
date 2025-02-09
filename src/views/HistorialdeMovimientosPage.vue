@@ -1,186 +1,166 @@
 <template>
-    <div class="transactions-page">
-        <h1>Historial de Movimientos</h1>
+    <div>
+        <div v-if="!showEditForm" class="w-full md:w-2/3 mx-auto p-4">
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-blue-500 text-white text-lg font-semibold p-4">
+                    Historial de Transacciones
+                </div>
+                <div class="p-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Crypto Code</th>
+                                <th
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Crypto Amount</th>
+                                <th
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Money</th>
+                                <th
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Action</th>
+                                <th
+                                    class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date</th>
+                                <th class="px-4 py-2"></th>
+                                <th class="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="tran in history" :key="tran._id">
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ tran.crypto_code }}
+                                </td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ tran.crypto_amount }}
+                                </td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ tran.money }}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{
+                                    tran.action.toUpperCase() }}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ new
+                                    Date(tran.datetime).toLocaleString() }}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm">
+                                    <button @click="editTransaction(tran)" class="text-blue-500 hover:underline">
+                                        Edit
+                                    </button>
+                                </td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm">
+                                    <button @click="delTransaction(tran._id)" class="text-red-500 hover:underline">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-        <table class="transactions-table" v-if="transactions.length">
-            <thead>
-                <tr>
-                    <th>Criptomoneda</th>
-                    <th>Cantidad</th>
-                    <th>Monto (ARS)</th>
-                    <th>Fecha</th>
-                    <th>Tipo</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="transaction in transactions" :key="transaction._id">
-                    <td>{{ transaction.crypto_code }}</td>
-                    <td>{{ transaction.crypto_amount }}</td>
-                    <td>{{ transaction.money }}</td>
-                    <td>{{ formatDate(transaction.datetime) }}</td>
-                    <td>{{ transaction.action === 'purchase' ? 'Compra' : 'Venta' }}</td>
-                    <td>
-                        <button @click="readTransaction(transaction._id)">Leer</button>
-                        <button @click="editTransaction(transaction._id)">Editar</button>
-                        <button @click="deleteTransaction(transaction._id)">Borrar</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <p v-if="!transactions.length">No se encontraron movimientos.</p>
-
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-        <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+        <div v-else class="w-full md:w-2/3 mx-auto p-4">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Edit Transaction</h3>
+                <form @submit.prevent="updateTran">
+                    <div class="mb-4">
+                        <label for="crypto_code" class="block text-sm font-medium text-gray-700">Crypto Code</label>
+                        <select v-model="selectedTranEdit.crypto_code" id="crypto_code"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="btc">Bitcoin</option>
+                            <option value="eth">Ethereum</option>
+                            <option value="usdc">USDC</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="crypto_amount" class="block text-sm font-medium text-gray-700">Crypto Amount</label>
+                        <input type="text" v-model="selectedTranEdit.crypto_amount" id="crypto_amount"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="money" class="block text-sm font-medium text-gray-700">Money</label>
+                        <input type="text" v-model="selectedTranEdit.money" id="money"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="action" class="block text-sm font-medium text-gray-700">Action</label>
+                        <select v-model="selectedTranEdit.action" id="action"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="purchase">Purchase</option>
+                            <option value="sale">Sale</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                            Ok
+                        </button>
+                        <button type="button" @click="cancelEdit"
+                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </template>
-
 <script>
-import axios from 'axios';
+import lab3api from '@/api/lab3api';
 
 export default {
+    components: {},
     data() {
         return {
-            transactions: [], // Lista de movimientos
-            errorMessage: '',
-            successMessage: '',
-        };
+            history: {},
+            showEditForm: false,
+            selectedTran: {},
+            selectedTranEdit: {}
+        }
     },
-    mounted() {
-        this.fetchTransactions();
+    created() {
+        lab3api.getTransaction(localStorage.getItem('userId')).then((res) => {
+            this.history = res.data;
+        })
     },
     methods: {
-        async fetchTransactions() {
-            try {
-                const userId = localStorage.getItem('userId');
-                const response = await axios.get(
-                    `https://laboratorio3-f36a.restdb.io/rest/transactions?q={"user_id": "${userId}"}`,
-                    {
-                        headers: {
-                            'x-apikey': '60eb09146661365596af552f',
-                        },
-                    }
-                );
-                this.transactions = response.data;
-            } catch (error) {
-                console.error('Error al obtener movimientos:', error);
-                this.errorMessage = 'No se pudieron cargar los movimientos.';
-            }
+        editTransaction(tran) {
+            this.selectedTran = tran;
+            this.selectedTranEdit = tran;
+            this.showEditForm = true;
         },
-        formatDate(datetime) {
-            const date = new Date(datetime);
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
+        cancelEdit() {
+            this.selectedTran = {};
+            this.showEditForm = false;
+            console.log("canceled")
+        },
+        updateTran() {
+            if (!this.selectedTran || !this.selectedTran._id) {
+                alert('No se ha seleccionado ninguna transacción');
+                return;
+            }
 
-            return `${day}-${month}-${year} ${hours}:${minutes}`;
-        },
-        readTransaction(id) {
-            alert(`Detalles del movimiento con ID: ${id}`);
-        },
-        editTransaction(id) {
-            alert(`Editar movimiento con ID: ${id}`);
-            // Aquí puedes redirigir a una pantalla específica para editar el movimiento
-        },
-        async deleteTransaction(id) {
-            if (confirm('¿Estás seguro de que deseas borrar este movimiento?')) {
-                try {
-                    await axios.delete(
-                        `https://laboratorio3-f36a.restdb.io/rest/transactions/${id}`,
-                        {
-                            headers: {
-                                'x-apikey': '60eb09146661365596af552f',
-                            },
-                        }
-                    );
-                    this.transactions = this.transactions.filter(
-                        (transaction) => transaction._id !== id
-                    );
-                    this.successMessage = 'Movimiento borrado con éxito.';
-                } catch (error) {
-                    console.error('Error al borrar el movimiento:', error);
-                    this.errorMessage =
-                        'No se pudo borrar el movimiento. Inténtelo nuevamente.';
-                }
+            const id = this.selectedTran._id;
+            const data = {};
+
+            if (!this.selectedTranEdit.crypto_code?.trim()) {
+                alert('El código de la crypto es requerido');
+                return;
             }
+
+            if (!this.selectedTranEdit.crypto_amount || !this.selectedTranEdit.money) {
+                alert('Los montos son requeridos');
+                return;
+            }
+
+            data.crypto_code = this.selectedTranEdit.crypto_code;
+            data.crypto_amount = this.selectedTranEdit.crypto_amount;
+            data.money = this.selectedTranEdit.money;
+
+            lab3api.patchTransaction(id, data);
+            this.showEditForm = false;
         },
+        delTransaction(id) {
+            lab3api.delTransaction(id);
+            alert('Transaction has been deleted: id ' + id);
+            location.reload();
+        }
     },
-};
+}
 </script>
-
-<style scoped>
-.transactions-page {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-}
-
-.transactions-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-}
-
-.transactions-table th,
-.transactions-table td {
-    border: 1px solid #ccc;
-    padding: 10px;
-    text-align: center;
-}
-
-.transactions-table th {
-    background-color: #4caf50;
-    color: white;
-}
-
-.transactions-table td button {
-    padding: 5px 10px;
-    margin: 0 5px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.transactions-table td button:nth-child(1) {
-    background-color: #2196f3;
-    color: white;
-}
-
-.transactions-table td button:nth-child(2) {
-    background-color: #ffc107;
-    color: white;
-}
-
-.transactions-table td button:nth-child(3) {
-    background-color: #f44336;
-    color: white;
-}
-
-.transactions-table td button:hover {
-    opacity: 0.8;
-}
-
-.error-message {
-    color: red;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-.success-message {
-    color: green;
-    font-size: 0.9rem;
-    text-align: center;
-}
-</style>

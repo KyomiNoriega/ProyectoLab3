@@ -4,7 +4,6 @@ import HomePage from '@/views/HomePage.vue'
 import store from '@/store';
 import NuevaCompraPage from '@/views/NuevaCompraPage.vue';
 import HistorialdeMovimientosPage from '@/views/HistorialdeMovimientosPage.vue';
-import GestionTransaccionesPage from '@/views/GestionTransaccionesPage.vue';
 import AnalisisdeEstadoPage from '@/views/AnalisisdeEstadoPage.vue';
 import AnalisisdeInversionesPage from '@/views/AnalisisdeInversionesPage.vue';
 
@@ -16,7 +15,6 @@ const router = createRouter({
     { path: '/home', component: HomePage },
     { path: '/nuevacompra', component: NuevaCompraPage },
     { path: '/historialdemovimientos', component: HistorialdeMovimientosPage },
-    { path: '/detalletransacciones', component: GestionTransaccionesPage },
     { path: '/analisisdeestadoactual', component: AnalisisdeEstadoPage },
     { path: '/analisisdeinversiones', component: AnalisisdeInversionesPage },
   ],

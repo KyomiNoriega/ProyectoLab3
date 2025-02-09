@@ -18,20 +18,20 @@
                 </tr>
             </tbody>
         </table>
-
-        <p v-if="!investmentData.length">No se encontraron datos de inversiones.</p>
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <div v-else>
+            Cargando datos
+        </div>
     </div>
 </template>
 
 <script>
+import lab3api from '@/api/lab3api';
 import axios from 'axios';
 
 export default {
     data() {
         return {
             investmentData: [], // Lista de resultados de las inversiones
-            errorMessage: '', // Mensaje de error si ocurre un problema
         };
     },
     async mounted() {
@@ -40,24 +40,13 @@ export default {
     methods: {
         async analyzeInvestments() {
             try {
-                const userId = localStorage.getItem('userId');
-                const transactionsResponse = await axios.get(
-                    `https://laboratorio3-f36a.restdb.io/rest/transactions?q={"user_id": "${userId}"}`,
-                    {
-                        headers: {
-                            'x-apikey': '60eb09146661365596af552f',
-                        },
-                    }
-                );
-
-                const transactions = transactionsResponse.data;
+                const transactionsResponse = await lab3api.getTransaction(localStorage.getItem('userId'));
 
                 // Consolidar datos de compras y ventas por criptomoneda
-                const cryptoData = transactions.reduce((totals, transaction) => {
+                const cryptoData = transactionsResponse.data.reduce((totals, transaction) => {
                     const { crypto_code, crypto_amount, money, action } = transaction;
-                    if (!totals[crypto_code]) {
-                        totals[crypto_code] = { amount: 0, cost: 0, revenue: 0 };
-                    }
+
+                    if (!totals[crypto_code]) totals[crypto_code] = { amount: 0, cost: 0, revenue: 0 };
 
                     if (action === 'purchase') {
                         totals[crypto_code].amount += parseFloat(crypto_amount);
@@ -73,11 +62,8 @@ export default {
                 // Consultar valores actuales de criptomonedas con saldo positivo
                 const cryptoPrices = await Promise.all(
                     Object.entries(cryptoData)
-                        .filter(([, data]) => data.amount > 0)
                         .map(async ([crypto_code, data]) => {
-                            const priceResponse = await axios.get(
-                                `https://criptoya.com/api/satoshitango/${crypto_code}/ars/${data.amount}`
-                            );
+                            const priceResponse = await axios.get(`https://criptoya.com/api/satoshitango/${crypto_code}/ars/1`);
                             return {
                                 crypto_code,
                                 amount: data.amount,
@@ -90,20 +76,18 @@ export default {
 
                 // Calcular resultados de inversiones
                 const investmentData = cryptoPrices.map((crypto) => {
-                    const result =
-                        crypto.revenue + crypto.currentValue - crypto.cost; // Ganancia/Pérdida
+                    const result = crypto.revenue + (crypto.currentValue * crypto.amount) - crypto.cost; // Ganancia/Pérdida
                     return {
                         crypto_code: crypto.crypto_code,
                         result,
                     };
                 });
 
+                console.log(investmentData);
+
                 this.investmentData = investmentData;
-                this.errorMessage = '';
             } catch (error) {
                 console.error('Error al analizar inversiones:', error);
-                this.errorMessage =
-                    'Ocurrió un error al analizar sus inversiones. Intente nuevamente más tarde.';
             }
         },
         formatCurrency(value) {
